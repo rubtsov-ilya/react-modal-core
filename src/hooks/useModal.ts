@@ -38,7 +38,7 @@ export function useModal({
   const openModal = () => {
     const bodyPadding =
       window.innerWidth -
-      (document.querySelector('#root') as HTMLDivElement).offsetWidth;
+      (document.querySelector('#root') as HTMLDivElement)?.offsetWidth;
     setIsModalActive(true);
     onOpenModal && onOpenModal();
     if (!isMobile && !isBodyOverflowDisable) {
