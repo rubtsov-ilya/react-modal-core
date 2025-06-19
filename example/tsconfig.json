@@ -2,8 +2,10 @@
   "compilerOptions": {
     "allowSyntheticDefaultImports": false,
     "target": "es5",
+    "esModuleInterop": true,
     "module": "commonjs",
-    "jsx": "react",
+    "jsx": "react-jsx",
+    "types": ["jest", "@testing-library/jest-dom"],
     "moduleResolution": "node",
     "noImplicitAny": false,
     "noUnusedLocals": false,
@@ -13,6 +15,5 @@
     "preserveConstEnums": true,
     "sourceMap": true,
     "lib": ["es2015", "es2016", "dom"],
-    "types": ["node"]
   }
 }
