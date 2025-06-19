@@ -89,12 +89,12 @@ function Component() {
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `divId` | string | - | Required. The ID for the portal container |
-| `transitionDuration` | number | 0 | Duration of the transition in milliseconds |
-| `transitionTimingFunction` | string | 'ease' | CSS transition timing function |
-| `initialModalState` | boolean | false | Initial state of the modal |
-| `isBodyOverflowDisable` | boolean | false | Disables body overflow handling |
-| `onOpenModal` | function | - | Callback when modal opens |
-| `onCloseModal` | function | - | Callback when modal closes |
+| `transitionDuration?` | number | 0 | Duration of the transition in milliseconds |
+| `transitionTimingFunction?` | string | 'ease' | CSS transition timing function |
+| `initialModalState?` | boolean | false | Initial state of the modal |
+| `isBodyOverflowDisable?` | boolean | false | Disables body overflow handling |
+| `onOpenModal?` | function | - | Callback when modal opens |
+| `onCloseModal?` | function | - | Callback when modal closes |
 
 #### Return Values
 | Value | Type | Description |
@@ -119,12 +119,12 @@ function Component() {
 | `isModalActive` | boolean | If modal is mounted |
 | `isModalVisible` | boolean | If modal is visible |
 | `closeModal` | function | Function to close modal |
-| `styleBackdrop` | CSSProperties | Custom backdrop styles |
-| `styleModal` | CSSProperties | Custom modal styles |
-| `classNameBackdrop` | string | Backdrop className |
-| `classNameModal` | string | Modal className |
-| `eventsBackdrop` | DOMAttributes | Backdrop event handlers |
-| `eventsModal` | DOMAttributes | Modal event handlers |
+| `styleBackdrop?` | CSSProperties | Custom backdrop styles |
+| `styleModal?` | CSSProperties | Custom modal styles |
+| `classNameBackdrop?` | string | Backdrop className |
+| `classNameModal?` | string | Modal className |
+| `eventsBackdrop?` | DOMAttributes | Backdrop event handlers |
+| `eventsModal?` | DOMAttributes | Modal event handlers |
 
 ## Advanced Usage
 
