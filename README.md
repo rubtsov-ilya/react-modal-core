@@ -28,12 +28,12 @@ function Component() {
     transitionDuration: 300,
   });
 
-  const {openModal, closeModal} = modal;
+  const { openModal, closeModal } = modal;
 
   return (
     <div>
       <button onClick={openModal}>Open Modal</button>
-      
+
       <Modal {...modal}>
         <h1>Modal Content</h1>
         <button onClick={closeModal}>Close</button>
@@ -46,8 +46,9 @@ function Component() {
 ## Default Styles
 
 ### Backdrop Styles
+
 ```css
-{
+ {
   position: fixed;
   top: 0;
   right: 0;
@@ -68,9 +69,19 @@ function Component() {
 }
 ```
 
-### Modal Styles
+### Backdrop Styles active
+
 ```css
-{
+ {
+  opacity: 1;
+  pointer-events: 'auto';
+}
+```
+
+### Modal Styles
+
+```css
+ {
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -97,15 +108,16 @@ function Component() {
 | `onCloseModal?` | function | - | Callback when modal closes |
 
 #### Return Values
-| Value | Type | Description |
-|-------|------|-------------|
-| `divId` | string | The portal container ID |
-| `transitionDuration` | number | Transition duration |
-| `transitionTimingFunction` | string | Transition timing function |
-| `isModalActive` | boolean | If modal is mounted |
-| `isModalVisible` | boolean | If modal is visible (for transitions) |
-| `openModal` | function | Opens the modal |
-| `closeModal` | function | Closes the modal |
+
+| Value                      | Type     | Description                           |
+| -------------------------- | -------- | ------------------------------------- |
+| `divId`                    | string   | The portal container ID               |
+| `transitionDuration`       | number   | Transition duration                   |
+| `transitionTimingFunction` | string   | Transition timing function            |
+| `isModalActive`            | boolean  | If modal is mounted                   |
+| `isModalVisible`           | boolean  | If modal is visible (for transitions) |
+| `openModal`                | function | Opens the modal                       |
+| `closeModal`               | function | Closes the modal                      |
 
 ### Modal Component
 
@@ -129,19 +141,43 @@ function Component() {
 ## Advanced Usage
 
 ### Custom Styles and Class Names
+
 ```tsx
-<Modal
-  {...modal}
-  classNameBackdrop="custom-backdrop"
-  classNameModal="custom-modal"
-  styleBackdrop={{ backgroundColor: 'rgba(255, 0, 0, 0.5)' }}
-  styleModal={{ width: '80%', maxWidth: '600px' }}
->
-  {/* content */}
-</Modal>
+import { useModal, Modal } from 'react-modal-core';
+
+function Component() {
+  const modal = useModal({
+    divId: 'modal-root',
+    transitionDuration: 300,
+  });
+
+  const { openModal, closeModal, isModalVisible } = modal;
+
+  return (
+    <div>
+      <button onClick={openModal}>Open Modal</button>
+
+      <Modal
+        {...modal}
+        classNameBackdrop="custom-backdrop"
+        classNameModal="custom-modal"
+        styleBackdrop={{
+          ...(isModalVisible && { opacity: '1' }),
+          ...(!isModalVisible && { opacity: '0' }),
+        }}
+        styleModal={{
+          ...(isModalVisible ? { width: '80%' } : { width: ' 100%' }),
+        }}
+      >
+        {/* content */}
+      </Modal>
+    </div>
+  );
+}
 ```
 
 ### Custom Event Handlers
+
 ```tsx
 <Modal
   {...modal}
