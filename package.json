@@ -79,5 +79,8 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/rubtsov-ilya/react-modal-core.git"
+  },
+  "overrides": {
+    "@semantic-release/npm": "$@semantic-release/npm"
   }
 }
