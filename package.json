@@ -40,11 +40,19 @@
   "size-limit": [
     {
       "path": "dist/react-modal-core.cjs.production.min.js",
-      "limit": "10 KB"
+      "limit": "10 KB",
+      "ignore": [
+        "react",
+        "react-dom"
+      ]
     },
     {
       "path": "dist/react-modal-core.esm.js",
-      "limit": "10 KB"
+      "limit": "10 KB",
+      "ignore": [
+        "react",
+        "react-dom"
+      ]
     }
   ],
   "devDependencies": {
