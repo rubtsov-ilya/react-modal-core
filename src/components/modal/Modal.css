@@ -1,0 +1,104 @@
+/* Headless styles targeting custom data-attributes and ARIA states */
+
+/* Backdrop / Overlay */
+[data-modal-overlay] {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  pointer-events: none;
+  will-change: opacity;
+}
+
+[data-modal-overlay][data-state="open"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+[data-modal-overlay][data-has-target="true"] {
+  position: absolute;
+}
+
+@media (max-width: 1024px) {
+  [data-modal-overlay] {
+    align-items: flex-start;
+  }
+}
+
+/* Modal Content Container */
+[data-modal-content] {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -46%) scale(0.95);
+  z-index: 1000;
+  width: 90%;
+  max-width: 500px;
+  background-color: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.8); /* Slate 200 */
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 
+    0 10px 25px -5px rgba(0, 0, 0, 0.05),
+    0 20px 48px -10px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+[data-modal-content][data-state="open"] {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+  pointer-events: auto;
+}
+
+/* Default triggers/closes styling (can be overridden, or used with asChild) */
+[data-modal-trigger], [data-modal-close] {
+  cursor: pointer;
+}
+
+button[data-modal-trigger] {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 500;
+  background-color: #4f46e5; /* Indigo 600 */
+  color: white;
+  border: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+}
+
+button[data-modal-trigger]:hover {
+  background-color: #4338ca; /* Indigo 700 */
+  transform: translateY(-1px);
+}
+
+button[data-modal-trigger]:active {
+  transform: translateY(0);
+}
+
+button[data-modal-close] {
+  padding: 8px 16px;
+  border-radius: 6px;
+  background-color: #f1f5f9; /* Slate 100 */
+  color: #334155; /* Slate 700 */
+  border: none;
+  font-weight: 500;
+  align-self: flex-end;
+  transition: all 0.15s ease;
+}
+
+button[data-modal-close]:hover {
+  background-color: #e2e8f0; /* Slate 200 */
+  color: #0f172a; /* Slate 900 */
+}
