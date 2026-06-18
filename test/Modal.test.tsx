@@ -1,22 +1,10 @@
 import '@testing-library/jest-dom';
-import React from 'react';
-import { render, screen, act, cleanup } from '@testing-library/react';
-import { Modal } from '../src/components/modal/Modal';
-import { useModal } from '../src/index';
+import React, { useState } from 'react';
+import { render, screen, act, fireEvent, cleanup } from '@testing-library/react';
+import { Modal, ModalProvider, useModalContext } from '../src/index';
 
-// Мокаем createPortal для тестирования
-jest.mock('react-dom', () => {
-  const actualDom = jest.requireActual('react-dom');
-  return {
-    ...actualDom,
-    createPortal: (element: React.ReactNode) => element,
-  };
-});
-
-describe('Modal component', () => {
+describe('Modal Component', () => {
   beforeEach(() => {
-    // Очищаем все порталы перед каждым тестом
-    document.querySelectorAll('#test-modal').forEach(el => el.remove());
     jest.useFakeTimers();
   });
 
@@ -24,280 +12,249 @@ describe('Modal component', () => {
     cleanup();
     jest.clearAllTimers();
     jest.useRealTimers();
+    // Сброс стилей body
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
   });
 
-  it('should not render when isModalActive is false', () => {
+  it('should render trigger and not render content by default', () => {
     render(
-      <Modal
-        divId="test-modal"
-        isModalActive={false}
-        isModalVisible={false}
-        transitionDuration={0}
-        transitionTimingFunction="ease"
-        closeModal={() => {}}
-      >
-        <div>Modal Content</div>
+      <Modal>
+        <Modal.Trigger>Open Modal</Modal.Trigger>
+        <Modal.Portal>
+          <Modal.Overlay data-testid="overlay" />
+          <Modal.Content data-testid="content">Modal Content</Modal.Content>
+        </Modal.Portal>
       </Modal>
     );
 
-    expect(screen.queryByText('Modal Content')).not.toBeInTheDocument();
+    expect(screen.getByText('Open Modal')).toBeInTheDocument();
+    expect(screen.queryByTestId('overlay')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('content')).not.toBeInTheDocument();
   });
 
-  it('should apply default styles', async () => { 
-    const TestComponent = () => {
-      const modal = useModal({ divId: 'test-modal' });
+  it('should render content and overlay after trigger click', () => {
+    render(
+      <Modal>
+        <Modal.Trigger>Open Modal</Modal.Trigger>
+        <Modal.Portal>
+          <Modal.Overlay data-testid="overlay" />
+          <Modal.Content data-testid="content">Modal Content</Modal.Content>
+        </Modal.Portal>
+      </Modal>
+    );
 
+    const trigger = screen.getByText('Open Modal');
+    fireEvent.click(trigger);
+
+    // После клика элемент должен смонтироваться в DOM
+    expect(screen.getByTestId('overlay')).toBeInTheDocument();
+    expect(screen.getByTestId('content')).toBeInTheDocument();
+
+    // Проверяем начальное состояние анимации
+    expect(screen.getByTestId('overlay')).toHaveAttribute('data-state', 'closed');
+    
+    // Перематываем время для завершения перехода (таймаут 10мс в Modal.tsx)
+    act(() => {
+      jest.advanceTimersByTime(10);
+    });
+
+    expect(screen.getByTestId('overlay')).toHaveAttribute('data-state', 'open');
+    expect(screen.getByTestId('content')).toHaveAttribute('data-state', 'open');
+  });
+
+  it('should close when close button is clicked', () => {
+    render(
+      <Modal defaultOpen={true}>
+        <Modal.Portal>
+          <Modal.Overlay data-testid="overlay" />
+          <Modal.Content data-testid="content">
+            Modal Content
+            <Modal.Close data-testid="close-btn">Close</Modal.Close>
+          </Modal.Content>
+        </Modal.Portal>
+      </Modal>
+    );
+
+    // Прокручиваем время начального монтирования
+    act(() => {
+      jest.advanceTimersByTime(10);
+    });
+
+    expect(screen.getByTestId('content')).toBeInTheDocument();
+
+    const closeButton = screen.getByTestId('close-btn');
+    fireEvent.click(closeButton);
+
+    // data-state должен сразу измениться на 'closed'
+    expect(screen.getByTestId('overlay')).toHaveAttribute('data-state', 'closed');
+    expect(screen.getByTestId('content')).toHaveAttribute('data-state', 'closed');
+
+    // Контент все еще в DOM во время анимации закрытия (по умолчанию 150мс)
+    expect(screen.getByTestId('content')).toBeInTheDocument();
+
+    // Прокручиваем время анимации закрытия
+    act(() => {
+      jest.advanceTimersByTime(150);
+    });
+
+    expect(screen.queryByTestId('content')).not.toBeInTheDocument();
+  });
+
+  it('should close when overlay is clicked', () => {
+    render(
+      <Modal defaultOpen={true}>
+        <Modal.Portal>
+          <Modal.Overlay data-testid="overlay" />
+          <Modal.Content data-testid="content">Modal Content</Modal.Content>
+        </Modal.Portal>
+      </Modal>
+    );
+
+    act(() => {
+      jest.advanceTimersByTime(10);
+    });
+
+    const overlay = screen.getByTestId('overlay');
+    fireEvent.click(overlay);
+
+    expect(overlay).toHaveAttribute('data-state', 'closed');
+
+    act(() => {
+      jest.advanceTimersByTime(150);
+    });
+
+    expect(screen.queryByTestId('content')).not.toBeInTheDocument();
+  });
+
+  it('should close on Escape key press', () => {
+    render(
+      <Modal defaultOpen={true}>
+        <Modal.Portal>
+          <Modal.Overlay data-testid="overlay" />
+          <Modal.Content data-testid="content">Modal Content</Modal.Content>
+        </Modal.Portal>
+      </Modal>
+    );
+
+    act(() => {
+      jest.advanceTimersByTime(10);
+    });
+
+    fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' });
+
+    expect(screen.getByTestId('overlay')).toHaveAttribute('data-state', 'closed');
+
+    act(() => {
+      jest.advanceTimersByTime(150);
+    });
+
+    expect(screen.queryByTestId('content')).not.toBeInTheDocument();
+  });
+
+  it('should support controlled mode', () => {
+    const ControlledComponent = () => {
+      const [isOpen, setIsOpen] = useState(false);
       return (
         <div>
-          <button onClick={modal.openModal}>Open Modal</button>
-          <Modal
-            {...modal}
-          >
-            <div>Modal Content</div>
+          <button onClick={() => setIsOpen(true)}>Open External</button>
+          <Modal open={isOpen} onOpenChange={setIsOpen}>
+            <Modal.Portal>
+              <Modal.Overlay data-testid="overlay" />
+              <Modal.Content data-testid="content">
+                Modal Content
+                <Modal.Close data-testid="close-btn">Close</Modal.Close>
+              </Modal.Content>
+            </Modal.Portal>
           </Modal>
         </div>
       );
     };
 
-    render(<TestComponent />);
+    render(<ControlledComponent />);
 
-    expect(screen.queryByText('Modal Content')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('content')).not.toBeInTheDocument();
 
-    await act(async () => {
-      screen.getByText('Open Modal').click();
+    fireEvent.click(screen.getByText('Open External'));
+
+    expect(screen.getByTestId('content')).toBeInTheDocument();
+
+    act(() => {
+      jest.advanceTimersByTime(10);
     });
 
-    // Ждём выполнения setTimeout(0)
-    await act(async () => {
-      jest.runAllTimers();
+    fireEvent.click(screen.getByTestId('close-btn'));
+
+    act(() => {
+      jest.advanceTimersByTime(150);
     });
 
-    const backdrop = screen.getByText('Modal Content').parentElement
-      ?.parentElement;
-
-    expect(backdrop).toHaveStyle('position: fixed');
-    expect(backdrop).toHaveStyle('opacity: 1');
+    expect(screen.queryByTestId('content')).not.toBeInTheDocument();
   });
 
-  it('should apply custom styles', async () => {
-    const customStyle = {
-      backgroundColor: 'red',
-    };
- 
-    const TestComponent = () => {
-      const modal = useModal({ divId: 'test-modal' });
+  it('should support custom appendTargetId', () => {
+    const customTarget = document.createElement('div');
+    customTarget.id = 'custom-target';
+    document.body.appendChild(customTarget);
 
-      return (
-        <div>
-          <button onClick={modal.openModal}>Open Modal</button>
-          <Modal
-            {...modal}
-            styleBackdrop={customStyle}
-            styleModal={customStyle}
-          >
-            <div>Modal Content</div>
-          </Modal>
-        </div>
-      );
-    };
+    render(
+      <Modal defaultOpen={true} appendTargetId="custom-target">
+        <Modal.Portal>
+          <Modal.Content data-testid="content">Modal Content</Modal.Content>
+        </Modal.Portal>
+      </Modal>
+    );
 
-    render(<TestComponent />);
+    expect(customTarget).toContainElement(screen.getByTestId('content'));
 
-    expect(screen.queryByText('Modal Content')).not.toBeInTheDocument();
-
-    await act(async () => {
-      screen.getByText('Open Modal').click();
-    });
-
-    // Ждём выполнения setTimeout(0)
-    await act(async () => {
-      jest.runAllTimers();
-    });
-
-    const backdrop = screen.getByText('Modal Content').parentElement
-      ?.parentElement;
-    const modal = screen.getByText('Modal Content').parentElement;
-
-    expect(backdrop).toHaveStyle('background-color: red');
-    expect(modal).toHaveStyle('background-color: red');
+    document.body.removeChild(customTarget);
   });
 
-  it('should apply className', async () => {
-    const TestComponent = () => {
-      const modal = useModal({ divId: 'test-modal' });
+  it('should lock body scroll and restore it when closed', () => {
+    expect(document.body.style.overflow).toBe('');
 
-      return (
-        <div>
-          <button onClick={modal.openModal}>Open Modal</button>
-          <Modal
-            {...modal}
-            classNameBackdrop="custom-backdrop"
-            classNameModal="custom-modal"
-          >
-            <div>Modal Content</div>
-          </Modal>
-        </div>
-      );
-    };
-
-    render(<TestComponent />);
-
-    expect(screen.queryByText('Modal Content')).not.toBeInTheDocument();
-
-    await act(async () => {
-      screen.getByText('Open Modal').click();
-    });
-
-    // Ждём выполнения setTimeout(0)
-    await act(async () => {
-      jest.runAllTimers();
-    });
-
-    const backdrop = screen.getByText('Modal Content').parentElement
-      ?.parentElement;
-    const modal = screen.getByText('Modal Content').parentElement;
-
-    expect(backdrop).toHaveClass('custom-backdrop');
-    expect(modal).toHaveClass('custom-modal');
-  });
-
-  it('should close when clicking on backdrop', async () => {
-    const closeMock = jest.fn(); // Мок функция для закрытия
-
-    const TestComponentWithMock = () => {
-      const modal = useModal({ divId: 'test-modal' });
-
-      return (
-        <div>
-          <button onClick={modal.openModal}>Open Modal</button>
-          <Modal {...modal} closeModal={closeMock}>
-            <div>Modal Content</div>
-          </Modal>
-        </div>
-      );
-    };
-
-    render(<TestComponentWithMock />);
-
-    expect(screen.queryByText('Modal Content')).not.toBeInTheDocument();
-
-    await act(async () => {
-      screen.getByText('Open Modal').click();
-    });
-
-    // Ждём выполнения setTimeout(0)
-    await act(async () => {
-      jest.runAllTimers();
-    });
-
-    expect(
-      screen.getByText('Modal Content').parentElement?.parentElement
-    ).toBeInTheDocument();
-
-    await act(async () => {
-      screen.getByText('Modal Content').parentElement?.parentElement?.click();
-    });
-
-    await act(async () => {
-      jest.runAllTimers();
-    });
-
-    // Проверяем, что модальное окно было разрендерено
-    expect(closeMock).toHaveBeenCalledTimes(1);
-  });
-
-  it('should not close when clicking on modal content', async () => {
-    const closeMock = jest.fn(); // Мок функция для закрытия
-
-    const TestComponentWithMock = () => {
-      const modal = useModal({ divId: 'test-modal' });
-
-      return (
-        <div>
-          <button onClick={modal.openModal}>Open Modal</button>
-          <Modal {...modal} closeModal={closeMock}>
-            <div>Modal Content</div>
-          </Modal>
-        </div>
-      );
-    };
-
-    render(<TestComponentWithMock />);
-
-    expect(screen.queryByText('Modal Content')).not.toBeInTheDocument();
-
-    await act(async () => {
-      screen.getByText('Open Modal').click();
-    });
-
-    // Ждём выполнения setTimeout(0)
-    await act(async () => {
-      jest.runAllTimers();
-    });
-
-    expect(screen.getByText('Modal Content')).toBeInTheDocument();
-
-    await act(async () => {
-      screen.getByText('Modal Content').click();
-    });
-
-    await act(async () => {
-      jest.useFakeTimers();
-      jest.runAllTimers();
-    });
-
-    // Проверяем, что модальное окно не было разрендерено
-    expect(closeMock).not.toHaveBeenCalled();
-  });
-
-  it('should add and remove div from DOM', () => {
     const { unmount } = render(
-      <Modal
-        divId="test-modal"
-        isModalActive={true}
-        isModalVisible={true}
-        transitionDuration={0}
-        transitionTimingFunction="ease"
-        closeModal={() => {}}
-      >
-        <div>Modal Content</div>
+      <Modal defaultOpen={true}>
+        <Modal.Portal>
+          <Modal.Content data-testid="content">Modal Content</Modal.Content>
+        </Modal.Portal>
       </Modal>
     );
 
-    expect(document.getElementById('test-modal')).toBeInTheDocument();
+    expect(document.body.style.overflow).toBe('hidden');
 
     unmount();
 
-    expect(document.getElementById('test-modal')).not.toBeInTheDocument();
+    expect(document.body.style.overflow).toBe('');
   });
 
-  it('should work with useModal hook', async () => {
-    const TestComponent = () => {
-      const modal = useModal({ divId: 'test-modal' });
-
+  it('should integrate with ModalProvider and global IDs', () => {
+    const GlobalModalsComponent = () => {
+      const modalCtx = useModalContext();
       return (
         <div>
-          <button onClick={modal.openModal}>Open Modal</button>
-          <Modal {...modal}>
-            <div>Modal Content</div>
+          <button onClick={() => modalCtx?.openModal('test-global-modal')}>
+            Open Global
+          </button>
+          <Modal id="test-global-modal">
+            <Modal.Portal>
+              <Modal.Content data-testid="content">Global Content</Modal.Content>
+            </Modal.Portal>
           </Modal>
         </div>
       );
     };
 
-    render(<TestComponent />);
+    render(
+      <ModalProvider>
+        <GlobalModalsComponent />
+      </ModalProvider>
+    );
 
-    expect(screen.queryByText('Modal Content')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('content')).not.toBeInTheDocument();
 
-    await act(async () => {
-      screen.getByText('Open Modal').click();
-    });
+    fireEvent.click(screen.getByText('Open Global'));
 
-    // Ждём выполнения setTimeout(0)
-    await act(async () => {
-      jest.runAllTimers();
-    });
-
-    expect(screen.getByText('Modal Content')).toBeInTheDocument();
+    expect(screen.getByTestId('content')).toBeInTheDocument();
   });
 });
