@@ -10,21 +10,19 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CI_JOB_NUMBER: 1
+      NPM_CONFIG_LEGACY_PEER_DEPS: true
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-
-      - name: Enable Corepack
-        run: corepack enable
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'yarn'
+          cache: 'npm'
 
       - name: Install dependencies
-        run: yarn install --immutable
+        run: npm ci
 
       - name: Check bundle size
         uses: andresz1/size-limit-action@v1
